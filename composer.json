@@ -1,0 +1,22 @@
+{
+  "name": "gophreak/hydrator",
+  "type": "library",
+  "description": "A Hydrator for PHP to convert configs, arrays and request objects to objects.",
+  "autoload": {
+    "psr-4": {
+      "Hydrator\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.2",
+    "laravel/pint": "^1.29"
+  }
+}
