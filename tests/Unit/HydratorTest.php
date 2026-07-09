@@ -37,11 +37,13 @@ final class HydratorTest extends TestCase
                 'int' => 30,
                 'float' => 17.5,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'John Smith',
                 'int' => 30,
                 'float' => 17.5,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -51,11 +53,13 @@ final class HydratorTest extends TestCase
                 'int' => 41,
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 41,
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -65,11 +69,13 @@ final class HydratorTest extends TestCase
                 'int' => '74',
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -79,11 +85,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => false,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -93,11 +101,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 0,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -107,11 +117,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 1,
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -121,11 +133,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => '0',
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -135,11 +149,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => '1',
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -149,11 +165,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 'true',
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ],
         ];
 
@@ -163,11 +181,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 'false',
+                'object' => new \stdClass(),
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ],
         ];
     }
@@ -181,6 +201,7 @@ final class HydratorTest extends TestCase
         $this->assertSame($expected['int'], $obj->int);
         $this->assertSame($expected['float'], $obj->float);
         $this->assertSame($expected['boolean'], $obj->boolean);
+        $this->assertEquals($expected['object'], $obj->object);
     }
 
     public static function data_invalid_casting_provider(): iterable
@@ -191,6 +212,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ], 'Invalid type: expected string, received array.',
         ];
 
@@ -200,6 +222,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
+                'object' => new \stdClass(),
             ], 'Invalid type: expected string, received boolean.',
         ];
 
@@ -209,6 +232,7 @@ final class HydratorTest extends TestCase
                 'int' => 'Hello',
                 'float' => 19.3,
                 'boolean' => true,
+                'object' => new \stdClass(),
             ], 'Invalid type: expected integer, received string.',
         ];
 
@@ -218,6 +242,7 @@ final class HydratorTest extends TestCase
                 'int' => 13,
                 'float' => 'Howdy 21',
                 'boolean' => true,
+                'object' => new \stdClass(),
             ], 'Invalid type: expected float, received string.',
         ];
 
@@ -227,6 +252,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => 2,
+                'object' => new \stdClass(),
             ], 'Invalid type: expected bool, received integer.',
         ];
     }

@@ -11,5 +11,6 @@ final class CastingObject
         public int $int,
         public float $float,
         public bool $boolean,
+        public object $object,
     ) {}
 }

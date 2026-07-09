@@ -62,12 +62,8 @@ final readonly class Hydrator
 
     private function cast(
         mixed $value,
-        ReflectionType $type,
+        ReflectionNamedType $type,
     ): mixed {
-        if (! $type instanceof ReflectionNamedType) {
-            return $value;
-        }
-
         switch ($type->getName()) {
             case 'string':
                 if (! is_string($value) && ! is_numeric($value)) {
