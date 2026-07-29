@@ -7,13 +7,15 @@ namespace Hydrator;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Sources\ArraySource;
+use Hydrator\Strategies\NamingStrategy;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
-use ReflectionType;
 
-final readonly class Hydrator
+final class Hydrator
 {
+    private ?NamingStrategy $strategy = null;
+
     public static function fromArray(array $data): self
     {
         return new self(
@@ -22,8 +24,15 @@ final readonly class Hydrator
     }
 
     public function __construct(
-        private Source $source,
+        private readonly Source $source,
     ) {}
+
+    public function using(?NamingStrategy $strategy): self
+    {
+        $this->strategy = $strategy;
+
+        return $this;
+    }
 
     /**
      * @template T of object
@@ -44,8 +53,18 @@ final readonly class Hydrator
 
         foreach ($constructor->getParameters() as $parameter) {
             $name = $parameter->getName();
-            if ($this->source->has($name)) {
-                $value = $this->cast($this->source->get($name), $parameter->getType());
+            $value = $this->source->get($name);
+            $paramType = $parameter->getType();
+
+            if (class_exists($paramType->getName()) && ! enum_exists($name)) {
+                if (! is_array($value)) {
+                    throw new InvalidTypeException('array', gettype($value));
+                }
+                $value = Hydrator::fromArray($value)->using($this->strategy)->to($paramType->getName());
+            } elseif ($this->source->has($name)) {
+                $value = $this->cast($value, $paramType);
+            } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($name))) {
+                $value = $this->cast($this->source->get($this->strategy->resolve($name)), $paramType);
             } elseif ($parameter->isDefaultValueAvailable()) {
                 $value = $parameter->getDefaultValue();
             } elseif ($parameter->allowsNull()) {

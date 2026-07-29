@@ -7,59 +7,51 @@ namespace Tests\Unit;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Hydrator;
+use Hydrator\Strategies\MappedNameStrategy;
+use Hydrator\Strategies\SnakeCaseNamingStrategy;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Tests\TestObjects\Address;
 use Tests\TestObjects\CastingObject;
 use Tests\TestObjects\Person;
+use Tests\TestObjects\PersonSeparateName;
+use Tests\TestObjects\PersonWithAddress;
 use Tests\TestObjects\PersonWithDefault;
 use Tests\TestObjects\PersonWithNullable;
 
 final class HydratorTest extends TestCase
 {
-    public function test_from_array(): void
+    public static function data_provider(): iterable
     {
-        $obj = Hydrator::fromArray([
-            'name' => 'John Smith',
-            'age' => 30,
-            'email' => 'john.smith@example.com',
-        ])->to(Person::class);
-
-        $this->assertSame('John Smith', $obj->name);
-        $this->assertSame(30, $obj->age);
-        $this->assertSame('john.smith@example.com', $obj->email);
-    }
-
-    public static function data_casting_provider(): iterable
-    {
-        yield 'all correct' => [
+        yield 'no casting' => [
             [
                 'string' => 'John Smith',
                 'int' => 30,
                 'float' => 17.5,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'John Smith',
                 'int' => 30,
                 'float' => 17.5,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
-        yield 'all correct alternative' => [
+        yield 'no casting alternative' => [
             [
                 'string' => 'Different',
                 'int' => 41,
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 41,
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -69,13 +61,13 @@ final class HydratorTest extends TestCase
                 'int' => '74',
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -85,13 +77,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -101,13 +93,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 0,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -117,13 +109,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 1,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -133,13 +125,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => '0',
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -149,13 +141,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => '1',
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -165,13 +157,13 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 'true',
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
 
@@ -181,19 +173,19 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => '569.3566',
                 'boolean' => 'false',
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], [
                 'string' => 'Different',
                 'int' => 74,
                 'float' => 569.3566,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ],
         ];
     }
 
-    #[DataProvider('data_casting_provider')]
-    public function test_from_array_with_casting_required(array $input, array $expected): void
+    #[DataProvider('data_provider')]
+    public function test_from_array(array $input, array $expected): void
     {
         $obj = Hydrator::fromArray($input)->to(CastingObject::class);
 
@@ -212,7 +204,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], 'Invalid type: expected string, received array.',
         ];
 
@@ -222,7 +214,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => false,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], 'Invalid type: expected string, received boolean.',
         ];
 
@@ -232,7 +224,7 @@ final class HydratorTest extends TestCase
                 'int' => 'Hello',
                 'float' => 19.3,
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], 'Invalid type: expected integer, received string.',
         ];
 
@@ -242,7 +234,7 @@ final class HydratorTest extends TestCase
                 'int' => 13,
                 'float' => 'Howdy 21',
                 'boolean' => true,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], 'Invalid type: expected float, received string.',
         ];
 
@@ -252,7 +244,7 @@ final class HydratorTest extends TestCase
                 'int' => 74,
                 'float' => 19.3,
                 'boolean' => 2,
-                'object' => new \stdClass(),
+                'object' => new \stdClass,
             ], 'Invalid type: expected bool, received integer.',
         ];
     }
@@ -296,5 +288,72 @@ final class HydratorTest extends TestCase
         $this->assertSame('John Smith', $obj->name);
         $this->assertSame(21, $obj->age);
         $this->assertSame('anonymous@example.com', $obj->email);
+    }
+
+    public function test_with_snake_case_strategy_passes(): void
+    {
+        $obj = Hydrator::fromArray([
+            'first_name' => 'John',
+            'middle_name' => 'Michael',
+            'last_name' => 'Smith',
+        ])->using(new SnakeCaseNamingStrategy())
+          ->to(PersonSeparateName::class)
+        ;
+
+        $this->assertSame('John', $obj->firstName);
+        $this->assertSame('Michael', $obj->middleName);
+        $this->assertSame('Smith', $obj->lastName);
+    }
+
+    public function test_with_mapped_name_strategy_passes(): void
+    {
+        $obj = Hydrator::fromArray([
+            'given_name' => 'John',
+            'middle_name' => 'Michael',
+            'family_name' => 'Smith',
+        ])->using(new MappedNameStrategy([
+            'firstName' => 'given_name',
+            'middleName' => 'middle_name',
+            'lastName' => 'family_name',
+        ]))
+            ->to(PersonSeparateName::class)
+        ;
+
+        $this->assertSame('John', $obj->firstName);
+        $this->assertSame('Michael', $obj->middleName);
+        $this->assertSame('Smith', $obj->lastName);
+    }
+
+    public function test_without_strategy_fails(): void
+    {
+        $this->expectException(MissingValueException::class);
+        $this->expectExceptionMessageIs('Missing value for property "firstName"');
+
+        Hydrator::fromArray([
+            'first_name' => 'John',
+            'middle_name' => 'Michael',
+            'last_name' => 'Smith',
+        ])->to(PersonSeparateName::class);
+    }
+
+    public function test_nested_hydrator_works(): void
+    {
+        $obj = Hydrator::fromArray([
+            'name' => 'John Smith',
+            'address' => [
+                'street' => '123 Main St',
+                'city' => 'Anytown',
+                'province' => 'ON',
+                'postcode' => 'A1B 2C3',
+            ],
+        ])->to(PersonWithAddress::class);
+
+        $this->assertSame('John Smith', $obj->name);
+        $this->assertInstanceOf(Address::class, $obj->address);
+
+        $this->assertSame('123 Main St', $obj->address->street);
+        $this->assertSame('Anytown', $obj->address->city);
+        $this->assertSame('ON', $obj->address->province);
+        $this->assertSame('A1B 2C3', $obj->address->postcode);
     }
 }
