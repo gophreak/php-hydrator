@@ -6,7 +6,7 @@ namespace Hydrator\Exception;
 
 final class InvalidTypeException extends \RuntimeException
 {
-    public function __construct(string $expected, mixed $received)
+    public function __construct(string $expected, string $received)
     {
         parent::__construct(sprintf('Invalid type: expected %s, received %s.', $expected, $received));
     }

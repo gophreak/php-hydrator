@@ -8,6 +8,9 @@ use Hydrator\Source;
 
 final readonly class ArraySource implements Source
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         private array $data,
     ) {}

@@ -13,6 +13,9 @@ final class Hydrator
 {
     private ?NamingStrategy $strategy = null;
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -46,6 +49,9 @@ final class Hydrator
         $reflection = new \ReflectionClass($class);
 
         $constructor = $reflection->getConstructor();
+        if ($constructor === null) {
+            throw new InvalidTypeException('object', 'null');
+        }
 
         $args = [];
 
@@ -53,12 +59,18 @@ final class Hydrator
             $name = $parameter->getName();
             $value = $this->source->get($name);
             $paramType = $parameter->getType();
+            if (!$paramType instanceof \ReflectionNamedType) {
+                continue;
+            }
 
             if (class_exists($paramType->getName()) && !enum_exists($name)) {
                 if (!is_array($value)) {
                     throw new InvalidTypeException('array', gettype($value));
                 }
-                $value = Hydrator::fromArray($value)->using($this->strategy)->to($paramType->getName());
+
+                /** @var array<string, mixed> $arrayData */
+                $arrayData = $value;
+                $value = Hydrator::fromArray($arrayData)->using($this->strategy)->to($paramType->getName());
             } elseif ($this->source->has($name)) {
                 $value = $this->cast($value, $paramType);
             } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($name))) {
@@ -94,14 +106,15 @@ final class Hydrator
 
             case 'int':
             case 'integer':
-                if (filter_var($value, FILTER_VALIDATE_INT) === false) {
+                $val = filter_var($value, FILTER_VALIDATE_INT);
+                if ($val === false) {
                     throw new InvalidTypeException(
                         expected: 'integer',
                         received: gettype($value),
                     );
                 }
 
-                return (int) $value;
+                return intval($val);
 
             case 'float':
                 if (!is_numeric($value)) {
