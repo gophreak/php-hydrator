@@ -8,8 +8,19 @@ use Hydrator\Strategies\SnakeCaseNamingStrategy;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class SnakeCaseNamingStrategyTest extends TestCase
 {
+    #[DataProvider('different_case_provider')]
+    public function testResolve(string $input, string $expected): void
+    {
+        $this->assertSame($expected, new SnakeCaseNamingStrategy()->resolve($input));
+    }
+
     public static function different_case_provider(): iterable
     {
         yield 'standard snake case' => [
@@ -36,11 +47,5 @@ final class SnakeCaseNamingStrategyTest extends TestCase
             'snake_case',
             'snake_case',
         ];
-    }
-
-    #[DataProvider('different_case_provider')]
-    public function test_resolve(string $input, string $expected): void
-    {
-        $this->assertSame($expected, new SnakeCaseNamingStrategy()->resolve($input));
     }
 }

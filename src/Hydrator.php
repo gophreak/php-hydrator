@@ -8,9 +8,6 @@ use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Sources\ArraySource;
 use Hydrator\Strategies\NamingStrategy;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionNamedType;
 
 final class Hydrator
 {
@@ -37,15 +34,16 @@ final class Hydrator
     /**
      * @template T of object
      *
-     * @param  class-string<T>  $class
+     * @param class-string<T> $class
+     *
      * @return T
      *
      * @throws MissingValueException
-     * @throws ReflectionException
+     * @throws \ReflectionException
      */
     public function to(string $class): object
     {
-        $reflection = new ReflectionClass($class);
+        $reflection = new \ReflectionClass($class);
 
         $constructor = $reflection->getConstructor();
 
@@ -56,8 +54,8 @@ final class Hydrator
             $value = $this->source->get($name);
             $paramType = $parameter->getType();
 
-            if (class_exists($paramType->getName()) && ! enum_exists($name)) {
-                if (! is_array($value)) {
+            if (class_exists($paramType->getName()) && !enum_exists($name)) {
+                if (!is_array($value)) {
                     throw new InvalidTypeException('array', gettype($value));
                 }
                 $value = Hydrator::fromArray($value)->using($this->strategy)->to($paramType->getName());
@@ -81,11 +79,11 @@ final class Hydrator
 
     private function cast(
         mixed $value,
-        ReflectionNamedType $type,
+        \ReflectionNamedType $type,
     ): mixed {
         switch ($type->getName()) {
             case 'string':
-                if (! is_string($value) && ! is_numeric($value)) {
+                if (!is_string($value) && !is_numeric($value)) {
                     throw new InvalidTypeException(
                         expected: 'string',
                         received: gettype($value),
@@ -93,6 +91,7 @@ final class Hydrator
                 }
 
                 return (string) $value;
+
             case 'int':
             case 'integer':
                 if (filter_var($value, FILTER_VALIDATE_INT) === false) {
@@ -103,8 +102,9 @@ final class Hydrator
                 }
 
                 return (int) $value;
+
             case 'float':
-                if (! is_numeric($value)) {
+                if (!is_numeric($value)) {
                     throw new InvalidTypeException(
                         expected: 'float',
                         received: gettype($value),
@@ -112,6 +112,7 @@ final class Hydrator
                 }
 
                 return (float) $value;
+
             case 'bool':
                 $result = filter_var(
                     $value,

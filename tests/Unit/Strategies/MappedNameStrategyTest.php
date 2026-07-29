@@ -8,8 +8,19 @@ use Hydrator\Strategies\MappedNameStrategy;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class MappedNameStrategyTest extends TestCase
 {
+    #[DataProvider('different_map_provider')]
+    public function testResolve(array $map, string $input, string $expected): void
+    {
+        $this->assertSame($expected, new MappedNameStrategy($map)->resolve($input));
+    }
+
     public static function different_map_provider(): iterable
     {
         yield 'case exists returns mapped' => [
@@ -23,11 +34,5 @@ final class MappedNameStrategyTest extends TestCase
             'yang',
             'yang',
         ];
-    }
-
-    #[DataProvider('different_map_provider')]
-    public function test_resolve(array $map, string $input, string $expected): void
-    {
-        $this->assertSame($expected, new MappedNameStrategy($map)->resolve($input));
     }
 }
