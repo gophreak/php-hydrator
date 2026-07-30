@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Functional;
 
+use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Hydrator;
+use Hydrator\Sources\PsrRequestSource;
 use Hydrator\Strategies\MappedNameStrategy;
 use Hydrator\Strategies\SnakeCaseNamingStrategy;
+use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
 use Tests\TestObjects\Address;
 use Tests\TestObjects\CastingObject;
+use Tests\TestObjects\ClassWithNoType;
+use Tests\TestObjects\ClassWithUnionType;
 use Tests\TestObjects\Person;
 use Tests\TestObjects\PersonSeparateName;
 use Tests\TestObjects\PersonWithAddress;
@@ -360,5 +366,101 @@ final class HydratorTest extends TestCase
         $this->assertSame('Anytown', $obj->address->city);
         $this->assertSame('ON', $obj->address->province);
         $this->assertSame('A1B 2C3', $obj->address->postcode);
+    }
+
+    public function testPsrRequestSourceWorks(): void
+    {
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->expects($this->atLeast(2))
+            ->method('getParsedBody')
+            ->willReturn([
+                'name' => 'John Smith',
+                'address' => [
+                    'street' => '123 Main St',
+                    'city' => 'Anytown',
+                    'province' => 'ON',
+                    'postcode' => 'A1B 2C3',
+                ]
+            ]);
+        $obj = Hydrator::fromPsrRequest($request)->to(PersonWithAddress::class);
+
+        $this->assertSame('John Smith', $obj->name);
+        $this->assertInstanceOf(Address::class, $obj->address);
+
+        $this->assertSame('123 Main St', $obj->address->street);
+        $this->assertSame('Anytown', $obj->address->city);
+        $this->assertSame('ON', $obj->address->province);
+        $this->assertSame('A1B 2C3', $obj->address->postcode);
+    }
+
+    public function testPsrRequestSourcePrioritisesBodyOverQuery(): void
+    {
+        $request = new ServerRequest('POST', '/?name=Robert%20Jackson&age=30&email=robert%40jackson.com')
+            ->withParsedBody([
+                'name' => 'John Smith',
+                'age' => 18,
+                'email' => 'john@smith.com',
+            ])
+        ;
+        $obj = Hydrator::fromPsrRequest($request)->to(Person::class);
+
+        $this->assertSame('John Smith', $obj->name);
+        $this->assertSame(18, $obj->age);
+        $this->assertSame('john@smith.com', $obj->email);
+    }
+
+    public function testPsrRequestSourceWorksWhenOnlyAllowingQuery(): void
+    {
+        $request = new ServerRequest('POST', '/?name=Robert%20Jackson&age=30&email=robert%40jackson.com')
+            ->withParsedBody([
+                'name' => 'John Smith',
+                'age' => 18,
+                'email' => 'john@smith.com',
+            ])
+        ;
+        $obj = Hydrator::fromPsrRequest($request, PsrRequestSource::PARSE_QUERY)->to(Person::class);
+
+        $this->assertSame('Robert Jackson', $obj->name);
+        $this->assertSame(30, $obj->age);
+        $this->assertSame('robert@jackson.com', $obj->email);
+    }
+
+    public function testHydratorThrowsExceptionWhenSourceHasNoConstructor(): void
+    {
+        $this->expectException(InvalidClassException::class);
+        $this->expectExceptionMessageIs('Invalid class: stdClass. The conversion class requires a constructor.');
+
+        Hydrator::fromArray([])->to(\stdClass::class);
+    }
+
+    public function testHydratorThrowsExceptionWhenSourceFieldIsNotCorrectDataType(): void
+    {
+        $this->expectException(InvalidTypeException::class);
+        $this->expectExceptionMessageIs('Invalid type: expected array, received string.');
+
+        $obj = Hydrator::fromArray([
+            'name' => 'John Smith',
+            'address' => 't',
+        ])->to(PersonWithAddress::class);
+    }
+
+    public function testHydratorThrowsExceptionWithUndefinedDataType(): void
+    {
+        $this->expectException(InvalidClassException::class);
+        $this->expectExceptionMessageIs('Invalid class: Tests\TestObjects\ClassWithNoType. The conversion class constructor arguments must be strictly typed.');
+        $obj = Hydrator::fromArray([
+            'name' => 'John Smith',
+            'mixed' => 't',
+        ])->to(ClassWithNoType::class);
+    }
+
+    public function testHydratorThrowsExceptionWithUnionDataType(): void
+    {
+        $this->expectException(InvalidClassException::class);
+        $this->expectExceptionMessageIs('Invalid class: Tests\TestObjects\ClassWithUnionType. The conversion class constructor arguments must be strictly typed.');
+        $obj = Hydrator::fromArray([
+            'name' => 'John Smith',
+            'mixed' => 't',
+        ])->to(ClassWithUnionType::class);
     }
 }

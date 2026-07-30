@@ -74,7 +74,7 @@ final class PsrRequestSourceTest extends TestCase
             ->withAttribute('tenant', 'acme')
         ;
 
-        $source = new PsrRequestSource($request);
+        $source = new PsrRequestSource($request, PsrRequestSource::PARSE_ATTRIBUTES);
 
         $this->assertTrue($source->has('userId'));
         $this->assertSame(123, $source->get('userId'));
@@ -123,5 +123,23 @@ final class PsrRequestSourceTest extends TestCase
 
         $this->assertTrue($source->has('middleName'));
         $this->assertNull($source->get('middleName'));
+    }
+
+    public function testValuesIgnoredIfNotAllowed(): void
+    {
+        $request = new ServerRequest('POST', '/?firstName=Robert')
+            ->withAttribute('middleName', 'James')
+            ->withParsedBody([
+                'lastName' => 'Mathews',
+            ])
+        ;
+
+        $source = new PsrRequestSource($request, PsrRequestSource::PARSE_QUERY | PsrRequestSource::PARSE_ATTRIBUTES);
+
+        $this->assertTrue($source->has('firstName'));
+        $this->assertSame('Robert', $source->get('firstName'));
+        $this->assertTrue($source->has('middleName'));
+        $this->assertSame('James', $source->get('middleName'));
+        $this->assertFalse($source->has('lastName'));
     }
 }

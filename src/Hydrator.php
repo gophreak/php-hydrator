@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Hydrator;
 
+use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Sources\ArraySource;
+use Hydrator\Sources\PsrRequestSource;
 use Hydrator\Strategies\NamingStrategy;
+use Psr\Http\Message\ServerRequestInterface;
 
 final class Hydrator
 {
@@ -20,6 +23,13 @@ final class Hydrator
     {
         return new self(
             new ArraySource($data),
+        );
+    }
+
+    public static function fromPsrRequest(ServerRequestInterface $request, $options = PsrRequestSource::PARSE_DEFAULT): self
+    {
+        return new self(
+            new PsrRequestSource($request, $options),
         );
     }
 
@@ -50,7 +60,7 @@ final class Hydrator
 
         $constructor = $reflection->getConstructor();
         if ($constructor === null) {
-            throw new InvalidTypeException('object', 'null');
+            throw new InvalidClassException(sprintf('Invalid class: %s. The conversion class requires a constructor.', $class));
         }
 
         $args = [];
@@ -60,7 +70,7 @@ final class Hydrator
             $value = $this->source->get($name);
             $paramType = $parameter->getType();
             if (!$paramType instanceof \ReflectionNamedType) {
-                continue;
+                throw new InvalidClassException(sprintf('Invalid class: %s. The conversion class constructor arguments must be strictly typed.', $class));
             }
 
             if (class_exists($paramType->getName()) && !enum_exists($paramType->getName())) {
