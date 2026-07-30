@@ -2,23 +2,15 @@
 
 **Type-safe object hydration for PHP.**
 
-Hydrator is a framework-agnostic library for converting untyped input into strongly typed PHP objects.
+Hydrator is a lightweight, framework-agnostic library that converts untyped input into strongly typed PHP objects.
 
-Instead of manually reading arrays, request parameters, configuration values, or environment variables and casting them throughout your application, Hydrator provides a consistent API for loading, validating, converting, and hydrating data into immutable objects.
+Instead of manually reading input and scattering casts throughout your application, Hydrator converts untyped data into strongly typed, immutable PHP objects.
 
 ## The Problem
 
-PHP applications receive data from many different sources:
+PHP applications constantly deal with untyped input.
 
-* HTTP requests
-* Configuration
-* Environment variables
-* JSON payloads
-* CLI arguments
-* Message queues
-* Arrays
-
-Every source exposes values as `mixed` or `string`, leaving developers to repeatedly write code such as:
+Whether it comes from an HTTP request, JSON payload, configuration file, environment variable or message queue, application code is often littered with repetitive casts and assignments.
 
 ```php
 $id = (int) $request->input('id');
@@ -30,7 +22,6 @@ This has several drawbacks:
 
 * repetitive casting
 * duplicated parsing logic
-* inconsistent validation
 * string-typed configuration
 * poor IDE support
 * difficult testing
@@ -39,7 +30,7 @@ Hydrator aims to solve this problem once.
 
 ## Philosophy
 
-Hydrator separates four concerns:
+Hydrator is built around three simple concepts:
 
 ### Sources
 
@@ -48,15 +39,12 @@ Where values come from.
 Examples:
 
 * HTTP Request
-* Configuration
-* Environment Variables
-* Arrays
-* JSON
-* Headers
-* Query Parameters
 * PSR-7 Requests
+* Arrays
+* Environment Variables
+* JSON (via `fromArray` after `json_decode`)
 
-Every source implements a common interface.
+Every input source implements the same interface.
 
 ```php
 interface Source
@@ -69,49 +57,23 @@ interface Source
 
 ---
 
-### Types
+### Conversion
 
 How values are converted.
 
-Built-in types include:
+Built-in conversions:
 
-* string
-* int
-* float
-* bool
-* enum
-* UUID
-* URL
-* email
-* JSON
-* bytes
-* duration
-* date/time
+* `string`
+* `int`
+* `float`
+* `bool`
+* `enums`
 
-Example:
-
-```php
-$input->int('id')->value();
-```
+Object types are hydrated recursively.
 
 ---
 
-### Validators
-
-How converted values are constrained.
-
-```php
-$input
-    ->int('port')
-    ->between(1, 65535)
-    ->value();
-```
-
-Validators operate on typed values rather than raw strings.
-
----
-
-### Mappers
+### Hydration
 
 How typed values become objects.
 
@@ -143,8 +105,12 @@ final readonly class CreateUserRequest
 Hydration:
 
 ```php
-$request = Hydrator::from(new RequestSource($request))
-    ->into(CreateUserRequest::class);
+$user = Hydrator::fromArray($data)
+    ->to(CreateUserRequest::class);
+
+$user->id;      // int
+$user->name;    // string
+$user->admin;   // bool
 ```
 
 No manual casts.
@@ -153,89 +119,117 @@ No repeated assignments.
 
 No string lookups throughout the application.
 
-## Other Sources
+## Naming Strategies
 
-Exactly the same API works for different inputs.
+Sometimes the input data keys don't match your property names (e.g., `snake_case` in JSON vs `camelCase` in PHP).
 
-Configuration:
+### Snake Case
 
-```php
-$config = Hydrator::from(
-    new ConfigSource($repository)
-);
-
-$mail = $config->into(MailConfiguration::class);
-```
-
-Environment:
+Converts `snake_case` input keys to `camelCase` properties.
 
 ```php
-$env = Hydrator::from(
-    new EnvironmentSource()
-);
-
-$app = $env->into(ApplicationConfiguration::class);
+final readonly class UserDto
+{
+    public function __construct(
+        public string $firstName,
+        public string $lastName,
+    ) {}
+}
 ```
-
-Arrays:
 
 ```php
-$user = Hydrator::fromArray($payload)
-    ->into(UserDto::class);
+use Hydrator\Strategies\SnakeCaseNamingStrategy;
+
+$user = Hydrator::fromArray([
+    'first_name' => 'John',
+    'last_name' => 'Smith',
+])->using(new SnakeCaseNamingStrategy())
+  ->to(UserDto::class);
 ```
 
-## Framework Adapters
+### Explicit Mapping
 
-The core package contains no framework dependencies.
-
-Separate adapters provide integration with popular frameworks.
-
-### Laravel
+Map specific input keys to property names.
 
 ```php
-$user = Hydrator::laravel($request)
-    ->into(CreateUserRequest::class);
+final readonly class UserDto
+{
+    public function __construct(
+        public string $firstName,
+        public string $lastName,
+    ) {}
+}
 ```
-
-### Symfony
 
 ```php
-$user = Hydrator::symfony($request)
-    ->into(CreateUserRequest::class);
+use Hydrator\Strategies\MappedNameStrategy;
+
+$user = Hydrator::fromArray([
+    'given_name' => 'John',
+    'family_name' => 'Smith',
+])->using(new MappedNameStrategy([
+    'firstName' => 'given_name',
+    'lastName' => 'family_name',
+]))->to(UserDto::class);
 ```
 
-### PSR-7
+### Nested Objects
+
+Hydrator automatically hydrates nested objects.
 
 ```php
-$user = Hydrator::psr($request)
-    ->into(CreateUserRequest::class);
+final readonly class Address
+{
+    public function __construct(
+        public string $street,
+        public string $city,
+    ) {}
+}
+
+final readonly class User
+{
+    public function __construct(
+        public string $name,
+        public Address $address,
+    ) {}
+}
+
+$user = Hydrator::fromArray([
+    'name' => 'Charles Dickens',
+    'address' => [
+        'street' => '123 Main St',
+        'city' => 'Anytown',
+    ],
+])->to(User::class);
+
+$user->name; // Charles Dickens
+$user->address->street; // 123 Main St
+$user->address->city; // Anytown
 ```
 
-## Goals
+## Framework Agnostic
 
-* Framework-agnostic
-* Zero required dependencies
+Hydrator has no framework dependencies.
+
+Framework integrations can be built on top of the `Source` interface, allowing Laravel, Symfony and PSR-7 adapters without changing the core library.
+
+## Features
+
+* Strongly typed hydration
+* Nested object hydration
+* Constructor-based hydration
 * Immutable DTO support
-* Strong typing
-* Extensible type system
-* Pluggable validators
-* Pluggable sources
-* Excellent error messages
-* Reflection cached for production performance
+* Naming strategies
+* Framework-agnostic
+* Zero runtime dependencies
 
 ## Future Ideas
 
-* Attribute-based property mapping
-* Nested object hydration
-* Collection support
-* Automatic enum resolution
-* Custom type registration
-* Generated metadata cache
-* IDE helper generation
-* Laravel service provider
-* Symfony bundle
-* CLI argument hydration
-* Message queue hydration
+* Collection hydrators
+* Custom type casters
+* Attribute-based mapping
+* Metadata caching
+* Framework adapters
 
 ## Non-Goals
 
@@ -249,3 +243,9 @@ Hydrator is **not**:
 Instead, it focuses on one responsibility:
 
 > **Safely converting untyped input into strongly typed PHP objects.**
+
+## Installation
+
+```bash
+composer require gophreak/hydrator
+```
