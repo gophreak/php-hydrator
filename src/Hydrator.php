@@ -63,7 +63,7 @@ final class Hydrator
                 continue;
             }
 
-            if (class_exists($paramType->getName()) && !enum_exists($name)) {
+            if (class_exists($paramType->getName()) && !enum_exists($paramType->getName())) {
                 if (!is_array($value)) {
                     throw new InvalidTypeException('array', gettype($value));
                 }
