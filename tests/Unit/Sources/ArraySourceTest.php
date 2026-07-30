@@ -7,6 +7,11 @@ namespace Tests\Unit\Sources;
 use Hydrator\Sources\ArraySource;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class ArraySourceTest extends TestCase
 {
     public function testHasReturnsCorrectly(): void
