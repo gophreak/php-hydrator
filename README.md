@@ -1,5 +1,7 @@
 # Hydrator
 
+[![CI](https://github.com/gophreak/php-hydrator/actions/workflows/ci.yml/badge.svg)](https://github.com/gophreak/php-hydrator/actions/workflows/ci.yml)
+
 **Type-safe object hydration for PHP.**
 
 Hydrator is a lightweight, framework-agnostic library for converting untyped input into strongly typed PHP objects.
