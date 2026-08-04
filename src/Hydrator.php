@@ -16,6 +16,9 @@ final class Hydrator
 {
     private ?NamingStrategy $strategy = null;
 
+    /** @var array<class-string, callable(mixed): object> */
+    private array $classFactories = [];
+
     /**
      * @param array<string, mixed> $data
      */
@@ -26,7 +29,7 @@ final class Hydrator
         );
     }
 
-    public static function fromPsrRequest(ServerRequestInterface $request, $options = PsrRequestSource::PARSE_DEFAULT): self
+    public static function fromPsrRequest(ServerRequestInterface $request, int $options = PsrRequestSource::PARSE_DEFAULT): self
     {
         return new self(
             new PsrRequestSource($request, $options),
@@ -40,6 +43,28 @@ final class Hydrator
     public function using(?NamingStrategy $strategy): self
     {
         $this->strategy = $strategy;
+
+        return $this;
+    }
+
+    /**
+     * @param class-string $class
+     */
+    public function withClassFactory(
+        string $class,
+        callable $factory,
+    ): self {
+        $this->classFactories[$class] = $factory;
+
+        return $this;
+    }
+
+    /**
+     * @param array<class-string, callable(mixed): object> $factories
+     */
+    public function withClassFactories(array $factories): self
+    {
+        $this->classFactories = array_merge($this->classFactories, $factories);
 
         return $this;
     }
@@ -67,33 +92,63 @@ final class Hydrator
 
         foreach ($constructor->getParameters() as $parameter) {
             $name = $parameter->getName();
-            $value = $this->source->get($name);
+
             $paramType = $parameter->getType();
             if (!$paramType instanceof \ReflectionNamedType) {
-                throw new InvalidClassException(sprintf('Invalid class: %s. The conversion class constructor arguments must be strictly typed.', $class));
+                throw new InvalidClassException(sprintf(
+                    'Invalid class: %s. The conversion class constructor arguments must be strictly typed.',
+                    $class,
+                ));
             }
 
-            if (class_exists($paramType->getName()) && !enum_exists($paramType->getName())) {
+            if ($this->source->has($name)) {
+                $value = $this->source->get($name);
+            } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($name))) {
+                $value = $this->source->get($this->strategy->resolve($name));
+            } elseif ($parameter->isDefaultValueAvailable()) {
+                $args[] = $parameter->getDefaultValue();
+
+                continue;
+            } elseif ($parameter->allowsNull()) {
+                $args[] = null;
+
+                continue;
+            } else {
+                throw new MissingValueException(sprintf('Missing value for property "%s".', $name));
+            }
+
+            $paramTypeName = $paramType->getName();
+
+            if (class_exists($paramTypeName) && !enum_exists($paramTypeName)) {
+                if ($value instanceof $paramTypeName) {
+                    $args[] = $value;
+
+                    continue;
+                }
+
+                if (isset($this->classFactories[$paramTypeName])) {
+                    $args[] = ($this->classFactories[$paramTypeName])($value);
+
+                    continue;
+                }
+
                 if (!is_array($value)) {
                     throw new InvalidTypeException('array', gettype($value));
                 }
 
                 /** @var array<string, mixed> $arrayData */
                 $arrayData = $value;
-                $value = Hydrator::fromArray($arrayData)->using($this->strategy)->to($paramType->getName());
-            } elseif ($this->source->has($name)) {
-                $value = $this->cast($value, $paramType);
-            } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($name))) {
-                $value = $this->cast($this->source->get($this->strategy->resolve($name)), $paramType);
-            } elseif ($parameter->isDefaultValueAvailable()) {
-                $value = $parameter->getDefaultValue();
-            } elseif ($parameter->allowsNull()) {
-                $value = null;
-            } else {
-                throw new MissingValueException(sprintf('Missing value for property "%s"', $name));
+
+                $args[] = Hydrator::fromArray($arrayData)
+                    ->using($this->strategy)
+                    ->withClassFactories($this->classFactories)
+                    ->to($paramTypeName)
+                ;
+
+                continue;
             }
 
-            $args[] = $value;
+            $args[] = $this->cast($value, $paramType);
         }
 
         return $reflection->newInstanceArgs($args);

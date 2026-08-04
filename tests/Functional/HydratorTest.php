@@ -17,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Tests\TestObjects\Address;
 use Tests\TestObjects\CastingObject;
+use Tests\TestObjects\ClassWithDate;
 use Tests\TestObjects\ClassWithNoType;
 use Tests\TestObjects\ClassWithUnionType;
 use Tests\TestObjects\Person;
@@ -272,7 +273,7 @@ final class HydratorTest extends TestCase
     public function testFromArrayWithPartialDataThrowsException(): void
     {
         $this->expectException(MissingValueException::class);
-        $this->expectExceptionMessageIs('Missing value for property "age"');
+        $this->expectExceptionMessageIs('Missing value for property "age".');
 
         Hydrator::fromArray([
             'name' => 'John Smith',
@@ -338,7 +339,7 @@ final class HydratorTest extends TestCase
     public function testWithoutStrategyFails(): void
     {
         $this->expectException(MissingValueException::class);
-        $this->expectExceptionMessageIs('Missing value for property "firstName"');
+        $this->expectExceptionMessageIs('Missing value for property "firstName".');
 
         Hydrator::fromArray([
             'first_name' => 'John',
@@ -380,8 +381,9 @@ final class HydratorTest extends TestCase
                     'city' => 'Anytown',
                     'province' => 'ON',
                     'postcode' => 'A1B 2C3',
-                ]
-            ]);
+                ],
+            ])
+        ;
         $obj = Hydrator::fromPsrRequest($request)->to(PersonWithAddress::class);
 
         $this->assertSame('John Smith', $obj->name);
@@ -438,17 +440,38 @@ final class HydratorTest extends TestCase
         $this->expectException(InvalidTypeException::class);
         $this->expectExceptionMessageIs('Invalid type: expected array, received string.');
 
-        $obj = Hydrator::fromArray([
+        Hydrator::fromArray([
             'name' => 'John Smith',
             'address' => 't',
         ])->to(PersonWithAddress::class);
+    }
+
+    public function testHydratorWithHybridDataType(): void
+    {
+        $obj = Hydrator::fromArray([
+            'name' => 'John Smith',
+            'address' => new Address(
+                '123 Main St',
+                'Anytown',
+                'ON',
+                'A1B 2C3',
+            ),
+        ])->to(PersonWithAddress::class);
+
+        $this->assertSame('John Smith', $obj->name);
+        $this->assertInstanceOf(Address::class, $obj->address);
+
+        $this->assertSame('123 Main St', $obj->address->street);
+        $this->assertSame('Anytown', $obj->address->city);
+        $this->assertSame('ON', $obj->address->province);
+        $this->assertSame('A1B 2C3', $obj->address->postcode);
     }
 
     public function testHydratorThrowsExceptionWithUndefinedDataType(): void
     {
         $this->expectException(InvalidClassException::class);
         $this->expectExceptionMessageIs('Invalid class: Tests\TestObjects\ClassWithNoType. The conversion class constructor arguments must be strictly typed.');
-        $obj = Hydrator::fromArray([
+        Hydrator::fromArray([
             'name' => 'John Smith',
             'mixed' => 't',
         ])->to(ClassWithNoType::class);
@@ -458,9 +481,23 @@ final class HydratorTest extends TestCase
     {
         $this->expectException(InvalidClassException::class);
         $this->expectExceptionMessageIs('Invalid class: Tests\TestObjects\ClassWithUnionType. The conversion class constructor arguments must be strictly typed.');
-        $obj = Hydrator::fromArray([
+        Hydrator::fromArray([
             'name' => 'John Smith',
             'mixed' => 't',
         ])->to(ClassWithUnionType::class);
+    }
+
+    public function testHydratorHydratesDateTimes(): void
+    {
+        $obj = Hydrator::fromArray([
+            'dateTimeImmutableArg1' => '2004-02-12T15:19:21+00:00',
+            'dateTimeArg2' => '1984-02-12T15:19:21+04:00',
+        ])->withClassFactory(\DateTime::class, fn (string $value) => new \DateTime($value))
+            ->withClassFactory(\DateTimeImmutable::class, fn (string $value) => new \DateTimeImmutable($value))
+            ->to(ClassWithDate::class)
+        ;
+
+        $this->assertInstanceOf(\DateTimeImmutable::class, $obj->dateTimeImmutableArg1);
+        $this->assertInstanceOf(\DateTime::class, $obj->dateTimeArg2);
     }
 }

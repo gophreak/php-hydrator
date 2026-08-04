@@ -2,9 +2,96 @@
 
 **Type-safe object hydration for PHP.**
 
-Hydrator is a lightweight, framework-agnostic library that converts untyped input into strongly typed PHP objects.
+Hydrator is a lightweight, framework-agnostic library for converting untyped input into strongly typed PHP objects.
 
-Instead of manually reading input and scattering casts throughout your application, Hydrator converts untyped data into strongly typed, immutable PHP objects.
+It eliminates repetitive casting and manual mapping by automatically hydrating arrays and HTTP requests into immutable DTOs.
+
+## Installation
+
+```bash
+composer require gophreak/php-hydrator
+```
+
+Requires PHP 8.4 or higher.
+
+## Quick Start
+
+### Request DTO
+
+```php
+final readonly class CreateUserRequest
+{
+    public function __construct(
+        public int $id,
+        public string $name,
+        public bool $admin = false,
+    ) {}
+}
+```
+
+Hydration:
+
+```php
+$user = Hydrator::fromArray($data)
+    ->to(CreateUserRequest::class);
+
+$user->id;      // int
+$user->name;    // string
+$user->admin;   // bool
+```
+
+No manual casts.
+
+No repeated assignments.
+
+No string lookups throughout the application.
+
+## Hydrating Specific Objects
+
+Some classes cannot be hydrated recursively because they are represented by a scalar value rather than an array. DateTime is a common example—it is typically represented by a string.
+
+```php
+final readonly class User {
+    public function __construct(
+        public int $id,
+        public string $firstName,
+        public string $lastName,
+        public string $email,
+        public DateTime $createdAt,
+    ) {}
+}
+
+$user = Hydrator::fromArray([
+    'id' => '12345',
+    'firstName' => 'John',
+    'lastName' => 'Smith',
+    'email' => 'john.smith@example.com',
+    'createdAt' => '2023-01-01 00:00:00',
+])->to(User::class);
+```
+
+By default, Hydrator recursively hydrates objects from arrays. DateTime is represented by a string instead, so you need to tell Hydrator how to construct it.
+
+The solution is to use a class Factory registration which extends beyond just DateTime.
+
+```php
+$user = Hydrator::fromArray([
+    'id' => '12345',
+    'firstName' => 'John',
+    'lastName' => 'Smith',
+    'email' => 'john.smith@example.com',
+    'createdAt' => '2023-01-01 00:00:00',
+])
+->withClassFactory(
+    DateTime::class,
+    fn (string $value) => new DateTime($value),
+)
+->to(User::class);
+```
+
+The registered factory tells Hydrator how to construct that specific type from the supplied value.
+
+Class factories can be registered for any type, making them useful for value objects such as DateTime, UUIDs, Money objects, or custom domain types.
 
 ## The Problem
 
@@ -36,13 +123,17 @@ Hydrator is built around three simple concepts:
 
 Where values come from.
 
-Examples:
+Built-in sources:
 
-* HTTP Request
-* PSR-7 Requests
 * Arrays
-* Environment Variables
-* JSON (via `fromArray` after `json_decode`)
+* PSR-7 Requests
+  
+Other common inputs can be hydrated by first converting them to one of the built-in sources:
+
+* Laravel/Symfony Requests (via PSR-7 bridges)
+* Configuration and environment variables (via arrays)
+* JSON payloads (via `json_decode()`)
+* Message queue payloads (via array deserialization)
 
 Every input source implements the same interface.
 
@@ -67,7 +158,6 @@ Built-in conversions:
 * `int`
 * `float`
 * `bool`
-* `enums`
 
 Object types are hydrated recursively.
 
@@ -86,38 +176,6 @@ $this->active = filter_var($request->input('active'), FILTER_VALIDATE_BOOL);
 ```
 
 Hydrator performs the mapping automatically.
-
-## Example
-
-### Request DTO
-
-```php
-final readonly class CreateUserRequest
-{
-    public function __construct(
-        public int $id,
-        public string $name,
-        public bool $admin = false,
-    ) {}
-}
-```
-
-Hydration:
-
-```php
-$user = Hydrator::fromArray($data)
-    ->to(CreateUserRequest::class);
-
-$user->id;      // int
-$user->name;    // string
-$user->admin;   // bool
-```
-
-No manual casts.
-
-No repeated assignments.
-
-No string lookups throughout the application.
 
 ## Naming Strategies
 
@@ -216,9 +274,9 @@ Framework integrations can be built on top of the `Source` interface, allowing L
 ## Features
 
 * Strongly typed hydration
-* Nested object hydration
 * Constructor-based hydration
-* Immutable DTO support
+* Nested object hydration
+* Custom class factories
 * Naming strategies
 * Framework-agnostic
 * Zero runtime dependencies
@@ -226,7 +284,7 @@ Framework integrations can be built on top of the `Source` interface, allowing L
 ## Future Ideas
 
 * Collection hydrators
-* Custom type casters
+* Built-in value object factories
 * Attribute-based mapping
 * Metadata caching
 * Framework adapters
@@ -244,8 +302,3 @@ Instead, it focuses on one responsibility:
 
 > **Safely converting untyped input into strongly typed PHP objects.**
 
-## Installation
-
-```bash
-composer require gophreak/php-hydrator
-```

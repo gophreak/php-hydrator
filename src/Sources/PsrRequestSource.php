@@ -9,10 +9,10 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class PsrRequestSource implements Source
 {
-    public const int PARSE_BODY       = 1 << 0;
-    public const int PARSE_QUERY      = 1 << 1;
+    public const int PARSE_BODY = 1 << 0;
+    public const int PARSE_QUERY = 1 << 1;
     public const int PARSE_ATTRIBUTES = 1 << 2;
-    public const int PARSE_DEFAULT    = self::PARSE_BODY | self::PARSE_QUERY;
+    public const int PARSE_DEFAULT = self::PARSE_BODY | self::PARSE_QUERY;
 
     /**
      * $options is a bitmask of the ALLOW_ constants. This allows the user to choose which parts of the request to use.

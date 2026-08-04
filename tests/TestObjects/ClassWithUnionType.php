@@ -8,6 +8,6 @@ final readonly class ClassWithUnionType
 {
     public function __construct(
         public string $name,
-        public string|int $mixed,
+        public int|string $mixed,
     ) {}
 }
