@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php: [ '8.4' ]
 
     steps:
       - name: Checkout repository
@@ -20,11 +17,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: '8.4'
           coverage: xdebug
 
       - name: Validate composer.json
-        run: composer validate --no-check-publish || true
+        run: composer validate --strict
 
       - name: Cache Composer dependencies
         uses: actions/cache@v4
@@ -34,16 +31,19 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Composer Audit
+        run: composer audit
 
       - name: PHP CS Fixer (dry-run)
         run: vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes
 
       - name: PHPStan (level 8)
-        run: vendor/bin/phpstan analyse src --memory-limit=1G --level=8
+        run: vendor/bin/phpstan analyse src --memory-limit=1G
 
       - name: Run PHPUnit with coverage
-        run: vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=clover.xml
+        run: vendor/bin/phpunit --coverage-clover=clover.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
