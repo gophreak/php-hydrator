@@ -247,5 +247,5 @@ Instead, it focuses on one responsibility:
 ## Installation
 
 ```bash
-composer require gophreak/hydrator
+composer require gophreak/php-hydrator
 ```
