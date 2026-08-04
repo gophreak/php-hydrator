@@ -40,7 +40,7 @@ jobs:
         run: vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes
 
       - name: PHPStan (level 8)
-        run: vendor/bin/phpstan analyse --memory-limit=1G --level=8
+        run: vendor/bin/phpstan analyse src --memory-limit=1G --level=8
 
       - name: Run PHPUnit with coverage
         run: vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=clover.xml
