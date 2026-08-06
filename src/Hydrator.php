@@ -120,30 +120,7 @@ final class Hydrator
             $paramTypeName = $paramType->getName();
 
             if (class_exists($paramTypeName) && !enum_exists($paramTypeName)) {
-                if ($value instanceof $paramTypeName) {
-                    $args[] = $value;
-
-                    continue;
-                }
-
-                if (isset($this->classFactories[$paramTypeName])) {
-                    $args[] = ($this->classFactories[$paramTypeName])($value);
-
-                    continue;
-                }
-
-                if (!is_array($value)) {
-                    throw new InvalidTypeException('array', gettype($value));
-                }
-
-                /** @var array<string, mixed> $arrayData */
-                $arrayData = $value;
-
-                $args[] = Hydrator::fromArray($arrayData)
-                    ->using($this->strategy)
-                    ->withClassFactories($this->classFactories)
-                    ->to($paramTypeName)
-                ;
+                $args[] = $this->hydrateObject($paramTypeName, $value);
 
                 continue;
             }
@@ -152,6 +129,35 @@ final class Hydrator
         }
 
         return $reflection->newInstanceArgs($args);
+    }
+
+    /**
+     * @param class-string $paramTypeName
+     * @throws \ReflectionException
+     */
+    private function hydrateObject(string $paramTypeName, mixed $value): object
+    {
+        if ($value instanceof $paramTypeName) {
+            /** @var object $value */
+            return $value;
+        }
+
+        if (isset($this->classFactories[$paramTypeName])) {
+            return ($this->classFactories[$paramTypeName])($value);
+        }
+
+        if (!is_array($value)) {
+            throw new InvalidTypeException('array', gettype($value));
+        }
+
+        /** @var array<string, mixed> $arrayData */
+        $arrayData = $value;
+
+        return Hydrator::fromArray($arrayData)
+            ->using($this->strategy)
+            ->withClassFactories($this->classFactories)
+            ->to($paramTypeName)
+        ;
     }
 
     private function cast(
