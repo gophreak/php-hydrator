@@ -7,6 +7,7 @@ namespace Hydrator;
 use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
+use Hydrator\Exception\UnsupportedParameterTypeException;
 use Hydrator\Sources\ArraySource;
 use Hydrator\Sources\PsrRequestSource;
 use Hydrator\Strategies\NamingStrategy;
@@ -50,10 +51,7 @@ final class Hydrator
     /**
      * @param class-string $class
      */
-    public function withClassFactory(
-        string $class,
-        callable $factory,
-    ): self {
+    public function withClassFactory(string $class, callable $factory): self {
         $this->classFactories[$class] = $factory;
 
         return $this;
@@ -91,44 +89,52 @@ final class Hydrator
         $args = [];
 
         foreach ($constructor->getParameters() as $parameter) {
-            $name = $parameter->getName();
-
-            $paramType = $parameter->getType();
-            if (!$paramType instanceof \ReflectionNamedType) {
-                throw new InvalidClassException(sprintf(
-                    'Invalid class: %s. The conversion class constructor arguments must be strictly typed.',
-                    $class,
-                ));
+            try {
+                $args[] = $this->resolveArgument($parameter);
+            } catch (UnsupportedParameterTypeException $e) {
+                throw new InvalidClassException(
+                    message: sprintf(
+                        'Invalid class: %s. The conversion class constructor arguments must be strictly typed.',
+                        $class,
+                    ),
+                    previous: $e,
+                );
             }
-
-            if ($this->source->has($name)) {
-                $value = $this->source->get($name);
-            } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($name))) {
-                $value = $this->source->get($this->strategy->resolve($name));
-            } elseif ($parameter->isDefaultValueAvailable()) {
-                $args[] = $parameter->getDefaultValue();
-
-                continue;
-            } elseif ($parameter->allowsNull()) {
-                $args[] = null;
-
-                continue;
-            } else {
-                throw new MissingValueException(sprintf('Missing value for property "%s".', $name));
-            }
-
-            $paramTypeName = $paramType->getName();
-
-            if (class_exists($paramTypeName) && !enum_exists($paramTypeName)) {
-                $args[] = $this->hydrateObject($paramTypeName, $value);
-
-                continue;
-            }
-
-            $args[] = $this->cast($value, $paramType);
         }
 
         return $reflection->newInstanceArgs($args);
+    }
+
+    /**
+     * @throws \ReflectionException
+     * @throws UnsupportedParameterTypeException
+     */
+    private function resolveArgument(\ReflectionParameter $parameter): mixed
+    {
+        $paramType = $parameter->getType();
+        if (!$paramType instanceof \ReflectionNamedType) {
+            throw new UnsupportedParameterTypeException('Only named parameters are supported.');
+        }
+
+        $paramName = $parameter->getName();
+        if ($this->source->has($paramName)) {
+            $value = $this->source->get($paramName);
+        } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($paramName))) {
+            $value = $this->source->get($this->strategy->resolve($paramName));
+        } elseif ($parameter->isDefaultValueAvailable()) {
+            return $parameter->getDefaultValue();
+        } elseif ($parameter->allowsNull()) {
+            return null; // design decision, we can set nullable value to null when not present in source.
+        } else {
+            throw new MissingValueException(sprintf('Missing value for property "%s".', $paramName));
+        }
+
+        $paramTypeName = $paramType->getName();
+        if (class_exists($paramTypeName) && !enum_exists($paramTypeName)) {
+            return $this->hydrateObject($paramTypeName, $value);
+        }
+
+        return $this->cast($value, $paramType);
     }
 
     /**
