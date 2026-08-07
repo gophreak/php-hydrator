@@ -112,7 +112,7 @@ final class Hydrator
     private function resolveArgument(\ReflectionParameter $parameter): mixed
     {
         $paramType = $parameter->getType();
-        if (!$paramType instanceof \ReflectionNamedType) {
+        if (!$paramType instanceof \ReflectionNamedType && ! $paramType instanceof \ReflectionUnionType) {
             throw new UnsupportedParameterTypeException('Only named parameters are supported.');
         }
 
@@ -129,6 +129,48 @@ final class Hydrator
             throw new MissingValueException(sprintf('Missing value for property "%s".', $paramName));
         }
 
+        if ($paramType instanceof \ReflectionUnionType) {
+            $paramTypeTypes = $paramType->getTypes();
+
+            if (array_any(
+                $paramTypeTypes,
+                fn ($paramTypeUnion) => match ($paramTypeUnion->getName()) {
+                    'string' => is_string($value),
+                    'int', 'integer' => is_int($value),
+                    'float' => is_float($value),
+                    'bool', 'boolean' => is_bool($value),
+                    'array' => is_array($value),
+                    default => $value instanceof ($paramTypeUnion->getName()),
+                },
+            )) {
+                return $value;
+            }
+
+            foreach ($paramTypeTypes as $paramTypeUnion) {
+                try {
+                    return $this->resolveNamedType($value, $paramTypeUnion->getName());
+                } catch (InvalidTypeException) {
+                    // Try the next union member.
+                }
+            }
+
+            throw new InvalidTypeException(
+                expected: implode('|', array_map(
+                    static fn (\ReflectionNamedType $type) => $type->getName(),
+                    $paramTypeTypes,
+                )),
+                received: gettype($value),
+            );
+        }
+
+        return $this->resolveNamedType($value, $paramType);
+    }
+
+    /**
+     * @throws \ReflectionException
+     */
+    private function resolveNamedType(mixed $value, \ReflectionNamedType $paramType): mixed
+    {
         $paramTypeName = $paramType->getName();
         if (class_exists($paramTypeName) && !enum_exists($paramTypeName)) {
             return $this->hydrateObject($paramTypeName, $value);
