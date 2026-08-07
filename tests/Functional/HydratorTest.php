@@ -477,14 +477,39 @@ final class HydratorTest extends TestCase
         ])->to(ClassWithNoType::class);
     }
 
-    public function testHydratorThrowsExceptionWithUnionDataType(): void
+    public static function unionDataTypesProvider(): iterable
     {
-        $this->expectException(InvalidClassException::class);
-        $this->expectExceptionMessageIs('Invalid class: Tests\TestObjects\ClassWithUnionType. The conversion class constructor arguments must be strictly typed.');
-        Hydrator::fromArray([
-            'name' => 'John Smith',
-            'mixed' => 't',
-        ])->to(ClassWithUnionType::class);
+        yield 'int|string as int' => [
+            [
+                'name' => 'John Smith',
+                'mixed' => 1,
+            ],
+            1,
+        ];
+
+        yield 'int|string as string' => [
+            [
+                'name' => 'John Smith',
+                'mixed' => '1',
+            ],
+            '1',
+        ];
+
+        yield 'int|string as string word' => [
+            [
+                'name' => 'John Smith',
+                'mixed' => 'one',
+            ],
+            'one',
+        ];
+    }
+
+    #[DataProvider('unionDataTypesProvider')]
+    public function testHydratorAcceptsUnionDataType(array $data, mixed $expected): void
+    {
+        $obj = Hydrator::fromArray($data)->to(ClassWithUnionType::class);
+
+        $this->assertSame($expected, $obj->mixed);
     }
 
     public function testHydratorHydratesDateTimes(): void
