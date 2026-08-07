@@ -165,7 +165,7 @@ final class Hydrator
             // Pass 3 - cast any values we can
             foreach ($paramTypeTypes as $paramTypeUnion) {
                 try {
-                    return $this->resolveNamedType($value, $paramTypeUnion->getName());
+                    return $this->resolveNamedType($value, $paramTypeUnion);
                 } catch (InvalidTypeException) {
                     // Try the next union member.
                 }
