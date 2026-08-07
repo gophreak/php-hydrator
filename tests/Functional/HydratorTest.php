@@ -18,8 +18,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Tests\TestObjects\Address;
 use Tests\TestObjects\CastingObject;
 use Tests\TestObjects\ClassWithDate;
-use Tests\TestObjects\ClassWithNoType;
 use Tests\TestObjects\ClassWithDateUnionDataType;
+use Tests\TestObjects\ClassWithNoType;
 use Tests\TestObjects\ClassWithUnionType;
 use Tests\TestObjects\Person;
 use Tests\TestObjects\PersonSeparateName;
@@ -478,6 +478,14 @@ final class HydratorTest extends TestCase
         ])->to(ClassWithNoType::class);
     }
 
+    #[DataProvider('unionScalarDataTypesProvider')]
+    public function testHydratorAcceptsUnionDataTypeWithScalars(array $data, mixed $expected): void
+    {
+        $obj = Hydrator::fromArray($data)->to(ClassWithUnionType::class);
+
+        $this->assertSame($expected, $obj->mixed);
+    }
+
     public static function unionScalarDataTypesProvider(): iterable
     {
         yield 'int|string as int' => [
@@ -503,14 +511,6 @@ final class HydratorTest extends TestCase
             ],
             'one',
         ];
-    }
-
-    #[DataProvider('unionScalarDataTypesProvider')]
-    public function testHydratorAcceptsUnionDataTypeWithScalars(array $data, mixed $expected): void
-    {
-        $obj = Hydrator::fromArray($data)->to(ClassWithUnionType::class);
-
-        $this->assertSame($expected, $obj->mixed);
     }
 
     public function testHydratorHydratesDateTimes(): void
@@ -545,7 +545,8 @@ final class HydratorTest extends TestCase
             'mixed' => '2023-01-01T01:02:03+04:00',
         ])
             ->withClassFactory(\DateTime::class, fn (string $value) => new \DateTime($value))
-            ->to(ClassWithDateUnionDataType::class);
+            ->to(ClassWithDateUnionDataType::class)
+        ;
 
         $this->assertInstanceOf(\DateTime::class, $obj->mixed);
         $this->assertEquals(new \DateTime('2023-01-01T01:02:03+04:00'), $obj->mixed);
