@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Strategies;
+namespace Tests\Unit\KeyResolvers;
 
+use Hydrator\KeyResolvers\MappedNameResolver;
 use Hydrator\Sources\ArraySource;
-use Hydrator\Strategies\MappedNameStrategy;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  *
- * @coversDefaultClass \Hydrator\Strategies\MappedNameStrategy
+ * @coversDefaultClass \Hydrator\KeyResolvers\MappedNameResolver
  */
-final class MappedNameStrategyTest extends TestCase
+final class MappedNameResolverTest extends TestCase
 {
     #[DataProvider('different_map_provider')]
     public function testResolve(ArraySource $source, array $map, string $input, string $expected): void
     {
-        $this->assertSame($expected, new MappedNameStrategy($map)->resolve($source, $input));
+        $this->assertSame($expected, new MappedNameResolver($map)->resolve($source, $input));
     }
 
     public static function different_map_provider(): iterable

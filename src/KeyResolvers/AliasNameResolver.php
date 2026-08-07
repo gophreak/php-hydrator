@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Hydrator\Strategies;
+namespace Hydrator\KeyResolvers;
 
 use Hydrator\Source;
 
-final readonly class AliasNameStrategy implements NamingStrategy
+final readonly class AliasNameResolver implements KeyResolver
 {
     /**
      * Maps the input key to the property name in the target class. If the key is not found,

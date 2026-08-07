@@ -1,4 +1,4 @@
-# Hydrator
+~~# Hydrator
 
 [![CI](https://github.com/gophreak/php-hydrator/actions/workflows/ci.yml/badge.svg)](https://github.com/gophreak/php-hydrator/actions/workflows/ci.yml)
 
@@ -209,9 +209,14 @@ $this->active = filter_var($request->input('active'), FILTER_VALIDATE_BOOL);
 
 Hydrator performs the mapping automatically.
 
-## Naming Strategies
+## Key Resolver stratgies
 
 Sometimes the input data keys don't match your property names (e.g., `snake_case` in JSON vs `camelCase` in PHP).
+
+Built-in key resolvers include:
+• SnakeCaseKeyResolver
+• MappedNameResolver
+• AliasNameResolver
 
 ### Snake Case
 
@@ -228,12 +233,12 @@ final readonly class UserDto
 ```
 
 ```php
-use Hydrator\Strategies\SnakeCaseNamingStrategy;
+use Hydrator\KeyResolvers\SnakeCaseKeyResolver;
 
 $user = Hydrator::fromArray([
     'first_name' => 'John',
     'last_name' => 'Smith',
-])->using(new SnakeCaseNamingStrategy())
+])->using(new SnakeCaseKeyResolver())
   ->to(UserDto::class);
 ```
 
@@ -252,14 +257,38 @@ final readonly class UserDto
 ```
 
 ```php
-use Hydrator\Strategies\MappedNameStrategy;
+use Hydrator\KeyResolvers\MappedNameResolver;
 
 $user = Hydrator::fromArray([
     'given_name' => 'John',
     'family_name' => 'Smith',
-])->using(new MappedNameStrategy([
+])->using(new MappedNameResolver([
     'firstName' => 'given_name',
     'lastName' => 'family_name',
+]))->to(UserDto::class);
+```
+
+### Aliased Properties
+
+```php
+final readonly class UserDto
+{
+    public function __construct(
+        public string $firstName,
+        public string $lastName,
+    ) {}
+}
+```
+
+```php
+use Hydrator\KeyResolvers\MappedNameResolver;
+
+$user = Hydrator::fromArray([
+    'given_name' => 'John',
+    'family_name' => 'Smith',
+])->using(new AliasNameResolver([
+    'firstName' => ['firstname', 'first_name', 'given_name'],
+    'lastName' => ['surname', 'family_name'],
 ]))->to(UserDto::class);
 ```
 
@@ -332,5 +361,5 @@ Hydrator is **not**:
 
 Instead, it focuses on one responsibility:
 
-> **Safely converting untyped input into strongly typed PHP objects.**
+> **Safely converting untyped input into strongly typed PHP objects.**~~
 

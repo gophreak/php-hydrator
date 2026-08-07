@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Strategies;
+namespace Tests\Unit\KeyResolvers;
 
+use Hydrator\KeyResolvers\SnakeCaseKeyResolver;
 use Hydrator\Sources\ArraySource;
-use Hydrator\Strategies\SnakeCaseNamingStrategy;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  *
- * @coversDefaultClass \Hydrator\Strategies\SnakeCaseNamingStrategy
+ * @coversDefaultClass \Hydrator\KeyResolvers\SnakeCaseKeyResolver
  */
-final class SnakeCaseNamingStrategyTest extends TestCase
+final class SnakeCaseNamingResolverTest extends TestCase
 {
     #[DataProvider('different_case_provider')]
     public function testResolve(ArraySource $source, string $input, string $expected): void
     {
-        $this->assertSame($expected, new SnakeCaseNamingStrategy()->resolve($source, $input));
+        $this->assertSame($expected, new SnakeCaseKeyResolver()->resolve($source, $input));
     }
 
     public static function different_case_provider(): iterable

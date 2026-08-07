@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Hydrator\Strategies;
+namespace Hydrator\KeyResolvers;
 
 use Hydrator\Source;
 
-interface NamingStrategy
+interface KeyResolver
 {
     public function resolve(Source $source, string $key): ?string;
 }

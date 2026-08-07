@@ -8,14 +8,14 @@ use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Exception\UnsupportedParameterTypeException;
+use Hydrator\KeyResolvers\KeyResolver;
 use Hydrator\Sources\ArraySource;
 use Hydrator\Sources\PsrRequestSource;
-use Hydrator\Strategies\NamingStrategy;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class Hydrator
 {
-    private ?NamingStrategy $strategy = null;
+    private ?KeyResolver $strategy = null;
 
     /** @var array<class-string, callable(mixed): object> */
     private array $classFactories = [];
@@ -41,7 +41,7 @@ final class Hydrator
         private readonly Source $source,
     ) {}
 
-    public function using(?NamingStrategy $strategy): self
+    public function using(?KeyResolver $strategy): self
     {
         $this->strategy = $strategy;
 

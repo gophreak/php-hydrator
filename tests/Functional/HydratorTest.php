@@ -8,9 +8,9 @@ use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Hydrator;
+use Hydrator\KeyResolvers\MappedNameResolver;
+use Hydrator\KeyResolvers\SnakeCaseKeyResolver;
 use Hydrator\Sources\PsrRequestSource;
-use Hydrator\Strategies\MappedNameStrategy;
-use Hydrator\Strategies\SnakeCaseNamingStrategy;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -309,7 +309,7 @@ final class HydratorTest extends TestCase
             'first_name' => 'John',
             'middle_name' => 'Michael',
             'last_name' => 'Smith',
-        ])->using(new SnakeCaseNamingStrategy())
+        ])->using(new SnakeCaseKeyResolver())
             ->to(PersonSeparateName::class)
         ;
 
@@ -324,7 +324,7 @@ final class HydratorTest extends TestCase
             'given_name' => 'John',
             'middle_name' => 'Michael',
             'family_name' => 'Smith',
-        ])->using(new MappedNameStrategy([
+        ])->using(new MappedNameResolver([
             'firstName' => 'given_name',
             'middleName' => 'middle_name',
             'lastName' => 'family_name',

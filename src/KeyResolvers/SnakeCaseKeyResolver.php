@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Hydrator\Strategies;
+namespace Hydrator\KeyResolvers;
 
 use Hydrator\Source;
 
-final readonly class SnakeCaseNamingStrategy implements NamingStrategy
+final readonly class SnakeCaseKeyResolver implements KeyResolver
 {
     public function resolve(Source $source, string $key): ?string
     {
