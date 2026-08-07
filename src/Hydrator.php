@@ -130,6 +130,7 @@ final class Hydrator
         }
 
         if ($paramType instanceof \ReflectionUnionType) {
+            /** @var \ReflectionNamedType[] $paramTypeTypes */
             $paramTypeTypes = $paramType->getTypes();
 
             // Pass 1 - resolve any object type if we can
@@ -184,6 +185,7 @@ final class Hydrator
     }
 
     /**
+     * @throws InvalidTypeException
      * @throws \ReflectionException
      */
     private function resolveNamedType(mixed $value, \ReflectionNamedType $paramType): mixed
@@ -198,6 +200,7 @@ final class Hydrator
 
     /**
      * @param class-string $paramTypeName
+     * @throws InvalidTypeException
      * @throws \ReflectionException
      */
     private function hydrateObject(string $paramTypeName, mixed $value): object
