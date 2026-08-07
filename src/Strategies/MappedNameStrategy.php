@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Hydrator\Strategies;
 
+use Hydrator\Source;
+
 final readonly class MappedNameStrategy implements NamingStrategy
 {
     /**
@@ -16,8 +18,10 @@ final readonly class MappedNameStrategy implements NamingStrategy
         private array $mapping,
     ) {}
 
-    public function resolve(string $property): string
+    public function resolve(Source $source, string $key): ?string
     {
-        return $this->mapping[$property] ?? $property;
+        $key = array_key_exists($key, $this->mapping) ? $this->mapping[$key] : $key;
+
+        return $source->has($key) ? $key : null;
     }
 }

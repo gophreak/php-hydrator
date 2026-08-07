@@ -30,7 +30,7 @@ use Tests\TestObjects\PersonWithNullable;
 /**
  * @internal
  *
- * @coversNothing
+ * @coversDefaultClass \Hydrator\Hydrator
  */
 final class HydratorTest extends TestCase
 {

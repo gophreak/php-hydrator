@@ -120,13 +120,21 @@ final class Hydrator
         $paramName = $parameter->getName();
         if ($this->source->has($paramName)) {
             $value = $this->source->get($paramName);
-        } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($paramName))) {
-            $value = $this->source->get($this->strategy->resolve($paramName));
-        } elseif ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
-        } elseif ($parameter->allowsNull()) {
-            return null; // design decision, we can set nullable value to null when not present in source.
-        } else {
+        } elseif ($this->strategy !== null) {
+            $key = $this->strategy->resolve($this->source, $paramName);
+            if ($key !== null) {
+                $value = $this->source->get($key);
+            }
+        }
+
+        if (!isset($value)) {
+            if ($parameter->isDefaultValueAvailable()) {
+                return $parameter->getDefaultValue();
+            }
+            if ($parameter->allowsNull()) {
+                return null; // design decision, we can set nullable value to null when not present in source.
+            }
+
             throw new MissingValueException(sprintf('Missing value for property "%s".', $paramName));
         }
 
@@ -137,7 +145,6 @@ final class Hydrator
             // Pass 1 - resolve any object type if we can
             foreach ($paramTypeTypes as $paramTypeUnion) {
                 $typeName = $paramTypeUnion->getName();
-
                 if (!class_exists($typeName) || enum_exists($typeName)) {
                     continue;
                 }

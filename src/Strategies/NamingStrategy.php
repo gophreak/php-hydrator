@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Hydrator\Strategies;
 
+use Hydrator\Source;
+
 interface NamingStrategy
 {
-    public function resolve(string $property): string;
+    public function resolve(Source $source, string $key): ?string;
 }
