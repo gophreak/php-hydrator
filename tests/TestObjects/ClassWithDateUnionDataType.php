@@ -8,6 +8,6 @@ final readonly class ClassWithDateUnionDataType
 {
     public function __construct(
         public string $name,
-        public string|\DateTime $mixed,
+        public \DateTime|string $mixed,
     ) {}
 }

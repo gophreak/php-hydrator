@@ -51,7 +51,8 @@ final class Hydrator
     /**
      * @param class-string $class
      */
-    public function withClassFactory(string $class, callable $factory): self {
+    public function withClassFactory(string $class, callable $factory): self
+    {
         $this->classFactories[$class] = $factory;
 
         return $this;
@@ -112,7 +113,7 @@ final class Hydrator
     private function resolveArgument(\ReflectionParameter $parameter): mixed
     {
         $paramType = $parameter->getType();
-        if (!$paramType instanceof \ReflectionNamedType && ! $paramType instanceof \ReflectionUnionType) {
+        if (!$paramType instanceof \ReflectionNamedType && !$paramType instanceof \ReflectionUnionType) {
             throw new UnsupportedParameterTypeException('Only named parameters are supported.');
         }
 
@@ -200,14 +201,14 @@ final class Hydrator
 
     /**
      * @param class-string $paramTypeName
+     *
      * @throws InvalidTypeException
      * @throws \ReflectionException
      */
     private function hydrateObject(string $paramTypeName, mixed $value): object
     {
         if ($value instanceof $paramTypeName) {
-            /** @var object $value */
-            return $value;
+            return (object) $value;
         }
 
         if (isset($this->classFactories[$paramTypeName])) {
