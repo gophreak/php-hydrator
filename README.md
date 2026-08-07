@@ -72,6 +72,36 @@ $user = Hydrator::fromArray([
 ])->to(User::class);
 ```
 
+
+Additionally, the hydrator also supports union types.
+```php
+final readonly class User {
+    public function __construct(
+        public int|string $id,
+        public string $firstName,
+        public string $lastName,
+        public string $email,
+    ) {}
+}
+
+$user = Hydrator::fromArray([
+    'id' => '12345',
+    'firstName' => 'John',
+    'lastName' => 'Smith',
+    'email' => 'john.smith@example.com',
+])
+->to(User::class);
+
+$user = Hydrator::fromArray([
+    'id' => 12345,
+    'firstName' => 'John',
+    'lastName' => 'Smith',
+    'email' => 'john.smith@example.com',
+])
+->to(User::class);
+```
+The above will result in $user->id being either an int or a string depending on the data type passed through.
+
 By default, Hydrator recursively hydrates objects from arrays. DateTime is represented by a string instead, so you need to tell Hydrator how to construct it.
 
 The solution is to use a class Factory registration which extends beyond just DateTime.

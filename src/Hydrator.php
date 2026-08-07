@@ -132,6 +132,22 @@ final class Hydrator
         if ($paramType instanceof \ReflectionUnionType) {
             $paramTypeTypes = $paramType->getTypes();
 
+            // Pass 1 - resolve any object type if we can
+            foreach ($paramTypeTypes as $paramTypeUnion) {
+                $typeName = $paramTypeUnion->getName();
+
+                if (!class_exists($typeName) || enum_exists($typeName)) {
+                    continue;
+                }
+
+                try {
+                    return $this->resolveNamedType($value, $paramTypeUnion);
+                } catch (InvalidTypeException) {
+                    // Try the next object type.
+                }
+            }
+
+            // Pass 2 - resolve any scalar type if we can
             if (array_any(
                 $paramTypeTypes,
                 fn ($paramTypeUnion) => match ($paramTypeUnion->getName()) {
@@ -146,6 +162,7 @@ final class Hydrator
                 return $value;
             }
 
+            // Pass 3 - cast any values we can
             foreach ($paramTypeTypes as $paramTypeUnion) {
                 try {
                     return $this->resolveNamedType($value, $paramTypeUnion->getName());
