@@ -2,34 +2,37 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Strategies;
+namespace Tests\Unit\KeyResolvers;
 
-use Hydrator\Strategies\MappedNameStrategy;
+use Hydrator\KeyResolvers\MappedNameResolver;
+use Hydrator\Sources\ArraySource;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  *
- * @coversNothing
+ * @coversDefaultClass \Hydrator\KeyResolvers\MappedNameResolver
  */
-final class MappedNameStrategyTest extends TestCase
+final class MappedNameResolverTest extends TestCase
 {
     #[DataProvider('different_map_provider')]
-    public function testResolve(array $map, string $input, string $expected): void
+    public function testResolve(ArraySource $source, array $map, string $input, string $expected): void
     {
-        $this->assertSame($expected, new MappedNameStrategy($map)->resolve($input));
+        $this->assertSame($expected, new MappedNameResolver($map)->resolve($source, $input));
     }
 
     public static function different_map_provider(): iterable
     {
         yield 'case exists returns mapped' => [
+            new ArraySource(['bar' => 'value']),
             ['foo' => 'bar'],
             'foo',
             'bar',
         ];
 
         yield 'case does not exist returns original' => [
+            new ArraySource(['yang' => 'value']),
             ['ying' => 'yang'],
             'yang',
             'yang',

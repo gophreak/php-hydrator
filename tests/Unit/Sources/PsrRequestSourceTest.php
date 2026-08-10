@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  *
- * @coversNothing
+ * @coversDefaultClass \Hydrator\Sources\PsrRequestSource
  */
 final class PsrRequestSourceTest extends TestCase
 {

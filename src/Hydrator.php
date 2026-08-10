@@ -8,14 +8,14 @@ use Hydrator\Exception\InvalidClassException;
 use Hydrator\Exception\InvalidTypeException;
 use Hydrator\Exception\MissingValueException;
 use Hydrator\Exception\UnsupportedParameterTypeException;
+use Hydrator\KeyResolvers\KeyResolver;
 use Hydrator\Sources\ArraySource;
 use Hydrator\Sources\PsrRequestSource;
-use Hydrator\Strategies\NamingStrategy;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class Hydrator
 {
-    private ?NamingStrategy $strategy = null;
+    private ?KeyResolver $strategy = null;
 
     /** @var array<class-string, callable(mixed): object> */
     private array $classFactories = [];
@@ -41,7 +41,7 @@ final class Hydrator
         private readonly Source $source,
     ) {}
 
-    public function using(?NamingStrategy $strategy): self
+    public function using(?KeyResolver $strategy): self
     {
         $this->strategy = $strategy;
 
@@ -120,13 +120,21 @@ final class Hydrator
         $paramName = $parameter->getName();
         if ($this->source->has($paramName)) {
             $value = $this->source->get($paramName);
-        } elseif ($this->strategy !== null && $this->source->has($this->strategy->resolve($paramName))) {
-            $value = $this->source->get($this->strategy->resolve($paramName));
-        } elseif ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
-        } elseif ($parameter->allowsNull()) {
-            return null; // design decision, we can set nullable value to null when not present in source.
-        } else {
+        } elseif ($this->strategy !== null) {
+            $key = $this->strategy->resolve($this->source, $paramName);
+            if ($key !== null) {
+                $value = $this->source->get($key);
+            }
+        }
+
+        if (!isset($value)) {
+            if ($parameter->isDefaultValueAvailable()) {
+                return $parameter->getDefaultValue();
+            }
+            if ($parameter->allowsNull()) {
+                return null; // design decision, we can set nullable value to null when not present in source.
+            }
+
             throw new MissingValueException(sprintf('Missing value for property "%s".', $paramName));
         }
 
@@ -137,7 +145,6 @@ final class Hydrator
             // Pass 1 - resolve any object type if we can
             foreach ($paramTypeTypes as $paramTypeUnion) {
                 $typeName = $paramTypeUnion->getName();
-
                 if (!class_exists($typeName) || enum_exists($typeName)) {
                     continue;
                 }

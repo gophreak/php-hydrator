@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  *
- * @coversNothing
+ * @coversDefaultClass \Hydrator\Sources\ArraySource
  */
 final class ArraySourceTest extends TestCase
 {
