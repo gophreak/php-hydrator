@@ -209,7 +209,7 @@ $this->active = filter_var($request->input('active'), FILTER_VALIDATE_BOOL);
 
 Hydrator performs the mapping automatically.
 
-## Key Resolver stratgies
+## Key Resolver strategies
 
 Sometimes the input data keys don't match your property names (e.g., `snake_case` in JSON vs `camelCase` in PHP).
 

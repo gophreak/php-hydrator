@@ -1,5 +1,5 @@
 {
-  "name": "gophreak/hydrator",
+  "name": "gophreak/php-hydrator",
   "type": "library",
   "description": "A Hydrator for PHP to convert configs, arrays and request objects to objects.",
   "authors": [
